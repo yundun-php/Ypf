@@ -1,0 +1,12 @@
+.buildpath
+.project
+.settings/
+.settings/*
+composer.lock
+/vendor/
+.DS_Store
+.idea
+.idea/
+tests/*.log
+tests/coverage/
+.php_cs.cache
