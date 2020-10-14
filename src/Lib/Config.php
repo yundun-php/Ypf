@@ -1,7 +1,6 @@
 <?php
 namespace Ypf\Lib;
 
-require __DIR__."/../vendor/autoload.php";
 use Symfony\Component\Yaml\Yaml;
 
 /**
