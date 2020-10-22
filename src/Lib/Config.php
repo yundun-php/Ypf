@@ -32,16 +32,27 @@ class Config
      	self::$instances = &$this;
 	}
 
-	public function load($path) 
-	{
-        if(is_file($path)) return self::parseFile($path);
-		
-        //foreach(glob($path. '/{*.php,*.conf,*.yaml,*.json}', GLOB_BRACE) as $config_file)
-        foreach(glob($path. '/{*.conf,*.yaml,*.json}', GLOB_BRACE) as $config_file)
-        {
-        	self::$path[] = $path;
-            self::parse($config_file);
-        }
+
+	public function load( $path ) {
+		if ( is_file( $path ) ) {
+			return self::parseFile( $path );
+		}
+
+		//兼容musl libc
+		if ( defined( 'GLOB_BRACE' ) && is_int( GLOB_BRACE ) ) {
+			foreach ( glob( $path . '/{*.conf,*.yaml,*.json}', GLOB_BRACE ) as $config_file ) {
+				self::$path[] = $path;
+				self::parse( $config_file );
+			}
+		} else {
+			$suffix = [ '*.conf', '*.yaml', '*.json' ];
+			foreach ( $suffix as $sf ) {
+				foreach ( glob( $path . "/$sf" ) as $config_file ) {
+					self::$path[] = $path;
+					self::parse( $config_file );
+				}
+			}
+		}
 	}
 
     /**

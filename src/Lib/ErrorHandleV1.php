@@ -146,10 +146,11 @@ EOF;
     }
 
     static public function writeLog($errorRaw = []) {
-        if(self::$logDate != date('Ymd')) {
-            ErrorHandleV1::cutLog();
-            self::$logDate = date('Ymd');
-        }
+        //由运维进行日志切割，程序不再处理
+        //if(self::$logDate != date('Ymd')) {
+        //    ErrorHandleV1::cutLog();
+        //    self::$logDate = date('Ymd');
+        //}
 
         if(ERROR_TRACELOG_JSON) {
             file_put_contents(ERROR_LOGFILE, date("Y-m-d H:i:s")."\t".json_encode($errorRaw)."\n", FILE_APPEND);
