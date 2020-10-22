@@ -73,6 +73,24 @@ class Config
         }
     }
 
+    public static function loadLang($path){
+	    //兼容musl libc
+	    if ( defined( 'GLOB_BRACE' ) && is_int( GLOB_BRACE ) ) {
+		    foreach ( glob( $path . '/{*.yaml}', GLOB_BRACE ) as $config_file ) {
+			    $cfg = self::parseYaml($config_file);
+				self::$config = array_merge_recursive(self::$config, $cfg);
+		    }
+	    } else {
+		    $suffix = [ '*.yaml' ];
+		    foreach ( $suffix as $sf ) {
+			    foreach ( glob( $path . "/$sf" ) as $config_file ) {
+				    $cfg = self::parseYaml($config_file);
+				    self::$config = array_merge_recursive(self::$config, $cfg);
+			    }
+		    }
+	    }
+    }
+
 
     protected static function parse($config_file){
         $suffix = pathinfo($config_file,PATHINFO_EXTENSION);
