@@ -12,9 +12,8 @@ class ConfigTest extends TestCase {
 	public function testLoad() {
 		$confObj = new Config();
 		$confObj->load( __CONF__ );
-		$confObj->loadLang( __CONF__ . '/lang/servicecommon' );
-		$confObj->loadLang( __CONF__ . '/lang/service1' );
-		$confObj->loadLang( __CONF__ . '/lang/service2' );
+		$confObj->loadRecursive( __CONF__ . '/lang/en' );
+		$confObj->loadRecursive( __CONF__ . '/lang/zh_CN' );
 
 		var_dump( Config::$config );
 	}

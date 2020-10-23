@@ -73,7 +73,7 @@ class Config
         }
     }
 
-	public static function loadLang( $path ) {
+	public static function loadRecursive( $path ) {
 		//兼容musl libc
 		if ( defined( 'GLOB_BRACE' ) && is_int( GLOB_BRACE ) ) {
 			foreach ( glob( $path . '/{*.yaml}', GLOB_BRACE ) as $config_file ) {
