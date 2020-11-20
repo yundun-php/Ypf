@@ -26,7 +26,7 @@ define('ERROR_LOGFILE', ERROR_LOG_PREKEY.SYS_KEY.'.log');
 
 if(!file_exists(ERROR_LOGFILE)) touch(ERROR_LOGFILE);
 
-//停用日志按日期自动切割
+//按日期自动切割日志, 通过配置定义开启，默认关闭
 if(defined('ERROR_LOG_AUTO_SPLIT') && ERROR_LOG_AUTO_SPLIT == true) {
     $cDate = date('Ymd', ErrorHandleV1::fctime(ERROR_LOGFILE));
     if(date('Ymd') != $cDate) ErrorHandleV1::cutLog(ERROR_LOGFILE);
@@ -149,7 +149,7 @@ EOF;
     }
 
     static public function writeLog($errorRaw = []) {
-        //根据用户的配置，启用日志自动切割
+        //按日期自动切割日志, 通过配置定义开启，默认关闭
         if(defined('ERROR_LOG_AUTO_SPLIT') && ERROR_LOG_AUTO_SPLIT == true) {
             if(self::$logDate != date('Ymd')) {
                 ErrorHandleV1::cutLog();
