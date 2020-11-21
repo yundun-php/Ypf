@@ -24,10 +24,11 @@ if(in_array(ini_get('display_errors'), ["Off", "off", "0"])) ini_set("display_er
 
 define('ERROR_LOGFILE', ERROR_LOG_PREKEY.SYS_KEY.'.log');
 
-//按日期切割
 if(!file_exists(ERROR_LOGFILE)) touch(ERROR_LOGFILE);
-$cDate = date('Ymd', ErrorHandleV1::fctime(ERROR_LOGFILE));
-if(date('Ymd') != $cDate) ErrorHandleV1::cutLog(ERROR_LOGFILE);
+
+//停用日志按日期自动切割
+//$cDate = date('Ymd', ErrorHandleV1::fctime(ERROR_LOGFILE));
+//if(date('Ymd') != $cDate) ErrorHandleV1::cutLog(ERROR_LOGFILE);
 
 class ErrorHandleV1 {
 
