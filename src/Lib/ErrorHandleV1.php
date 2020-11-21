@@ -24,10 +24,13 @@ if(in_array(ini_get('display_errors'), ["Off", "off", "0"])) ini_set("display_er
 
 define('ERROR_LOGFILE', ERROR_LOG_PREKEY.SYS_KEY.'.log');
 
-//按日期切割
 if(!file_exists(ERROR_LOGFILE)) touch(ERROR_LOGFILE);
-$cDate = date('Ymd', ErrorHandleV1::fctime(ERROR_LOGFILE));
-if(date('Ymd') != $cDate) ErrorHandleV1::cutLog(ERROR_LOGFILE);
+
+//按日期自动切割日志, 通过配置定义开启，默认关闭
+if(defined('ERROR_LOG_AUTO_SPLIT') && ERROR_LOG_AUTO_SPLIT == true) {
+    $cDate = date('Ymd', ErrorHandleV1::fctime(ERROR_LOGFILE));
+    if(date('Ymd') != $cDate) ErrorHandleV1::cutLog(ERROR_LOGFILE);
+}
 
 class ErrorHandleV1 {
 
@@ -146,11 +149,13 @@ EOF;
     }
 
     static public function writeLog($errorRaw = []) {
-        //由运维进行日志切割，程序不再处理
-        //if(self::$logDate != date('Ymd')) {
-        //    ErrorHandleV1::cutLog();
-        //    self::$logDate = date('Ymd');
-        //}
+        //按日期自动切割日志, 通过配置定义开启，默认关闭
+        if(defined('ERROR_LOG_AUTO_SPLIT') && ERROR_LOG_AUTO_SPLIT == true) {
+            if(self::$logDate != date('Ymd')) {
+                ErrorHandleV1::cutLog();
+                self::$logDate = date('Ymd');
+            }
+        }
 
         if(ERROR_TRACELOG_JSON) {
             file_put_contents(ERROR_LOGFILE, date("Y-m-d H:i:s")."\t".json_encode($errorRaw)."\n", FILE_APPEND);
