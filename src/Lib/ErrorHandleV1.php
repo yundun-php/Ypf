@@ -17,24 +17,73 @@ if(!defined('ERROR_DISPLAY_CLI'))   define('ERROR_DISPLAY_CLI',  false);
 if(!defined('ERROR_DISPLAY_HTML'))  define('ERROR_DISPLAY_HTML',  true);
 if(!defined('ERROR_TRACELOG_JSON')) define('ERROR_TRACELOG_JSON', true);
 if(!defined('ERROR_LOG_PREKEY')) define('ERROR_LOG_PREKEY', '/tmp/log_phperror_');
+if(!defined('ERROR_LOG_ARGS_SWITCH')) define('ERROR_LOG_ARGS_SWITCH', false);
 if(!defined('SYS_KEY')) define('SYS_KEY', 'default');
 
 if(in_array(ini_get('display_errors'), ["On", "on", "1"])) ini_set("display_errors","On");
 if(in_array(ini_get('display_errors'), ["Off", "off", "0"])) ini_set("display_errors","Off");
 
 define('ERROR_LOGFILE', ERROR_LOG_PREKEY.SYS_KEY.'.log');
-
 if(!file_exists(ERROR_LOGFILE)) touch(ERROR_LOGFILE);
+
+//需要记录参数的类, 仅为字符串
+//define('ERROR_LOG_ARGS_KEEP_CLASS', json_encode(['Ypf\Lib\DatabaseV5']));                                     //示例
+//需要记录参数的方法，普通方法用字符，类方法用数组
+//define('ERROR_LOG_ARGS_KEEP_FUNC', json_encode(['getPrimaryDomain', ['Ypf\Lib\DatabaseV5','query']]));        //示例
+//指明忽略参数的方法，避免敏感信息泄漏
+//define('ERROR_LOG_ARGS_IGNORE_FUNC', json_encode(['getPrimaryDomain', ['Ypf\Lib\DatabaseV5','query']]));      //示例
 
 //按日期自动切割日志, 通过配置定义开启，默认关闭
 if(defined('ERROR_LOG_AUTO_SPLIT') && ERROR_LOG_AUTO_SPLIT == true) {
     $cDate = date('Ymd', ErrorHandleV1::fctime(ERROR_LOGFILE));
     if(date('Ymd') != $cDate) ErrorHandleV1::cutLog(ERROR_LOGFILE);
 }
+if(defined('ERROR_LOG_ARGS_KEEP_CLASS') && ERROR_LOG_ARGS_KEEP_CLASS) {
+    $rows = json_decode(ERROR_LOG_ARGS_KEEP_CLASS, 1);
+    if(!json_last_error()) {
+        foreach($rows as $row) {
+            if(is_string($row)) ErrorHandleV1::$argsKeepClasses[$row] = 1;
+        }
+    }
+}
+if(defined('ERROR_LOG_ARGS_KEEP_FUNC') && ERROR_LOG_ARGS_KEEP_FUNC) {
+    $keepArgsFuncs = [];
+    $rows = json_decode(ERROR_LOG_ARGS_KEEP_FUNC, 1);
+    if(!json_last_error()) {
+        foreach($rows as $row) {
+            if(is_string($row)) {
+                ErrorHandleV1::$argsKeepFuncs[$row] = 1;
+            } else if(is_array($row) && count($row) == 2) {
+                ErrorHandleV1::$argsKeepFuncs["{$row[0]}-{$row[1]}"] = 1;
+            } else {
+            }
+        }
+    }
+}
+if(defined('ERROR_LOG_ARGS_IGNORE_FUNC') && ERROR_LOG_ARGS_IGNORE_FUNC) {
+    $keepArgsFuncs = [];
+    $rows = json_decode(ERROR_LOG_ARGS_IGNORE_FUNC, 1);
+    if(!json_last_error()) {
+        foreach($rows as $row) {
+            if(is_string($row)) {
+                ErrorHandleV1::$argsIgnoreFuncs[$row] = 1;
+            } else if(is_array($row) && count($row) == 2) {
+                ErrorHandleV1::$argsIgnoreFuncs["{$row[0]}-{$row[1]}"] = 1;
+            } else {
+            }
+        }
+    }
+}
 
 class ErrorHandleV1 {
 
     static public $logDate = null;
+    //需要记录参数的方法
+    static public $argsKeepFuncs = [];
+    //需要记录参数的类
+    static public $argsKeepClasses = [];
+    //日志中忽略方法的参数，避免敏感信息泄漏
+    static public $argsIgnoreFuncs = [];
 
     static private $errnoMap = [
         1     => 'E_ERROR',
@@ -100,13 +149,14 @@ EOF;
     public function Error($errno, $msg, $file, $line) {
         $trace    = debug_backtrace();
         unset($trace[0]);
+        $traceFilter = self::filterTrace($trace);
         $errorRaw = [
             "create_at" => date('Y-m-d H:i:s'),
             "type"      => self::$errnoMap[$errno],
             "file"      => $file,
             "line"      => $line,
             "msg"       => $msg,
-            "trace"     => self::formatTrace(self::filterTrace($trace)),
+            "trace"     => self::formatTrace($traceFilter, ERROR_LOG_ARGS_SWITCH),
             "syskey"    => SYS_KEY,
         ];
         self::writeLog($errorRaw);
@@ -114,6 +164,7 @@ EOF;
         if(!($errno & ini_get('error_reporting'))) return;
         //if($errno != E_ERROR) return;
         if(substr(php_sapi_name(), 0, 3) != 'cli') ob_clean();
+        $errorRaw['trace'] = self::formatTrace($traceFilter, true);
         self::display($errorRaw, ini_get('display_errors'));
     }
 
@@ -122,17 +173,19 @@ EOF;
         krsort($trace);
         $file = $exception->getFile();
         $line = $exception->getLine();
+        $traceFilter = self::filterTrace($trace);
         $errorRaw = [
             "create_at" => date('Y-m-d H:i:s'),
             "type"      => get_class($exception),
             "file"      => $file,
             "line"      => $line,
             "msg"       => $exception->getMessage(),
-            "trace"     => self::formatTrace(self::filterTrace($trace)),
+            "trace"     => self::formatTrace($traceFilter, ERROR_LOG_ARGS_SWITCH),
             "syskey"    => SYS_KEY,
         ];
         self::writeLog($errorRaw);
 
+        $errorRaw['trace'] = self::formatTrace($traceFilter, true);
         if(E_ERROR & ini_get('error_reporting')) {
             self::display($errorRaw, ini_get('display_errors'));
         } else {
@@ -201,19 +254,25 @@ EOF;
         return $rows;
     }
 
-    static public function formatTrace($traces = []) {
-        array_walk($traces, function(&$v, $k) {
-            //格式化args
-            array_walk($v['args'], function(&$arg, $k) {
-                if(is_array($arg)) {
-                    foreach($arg as &$item) {
-                        if(is_object($item)) $item = "obj:".get_class($item);
+    static public function formatTrace($traces = [], $logArgsFlag = false) {
+        array_walk($traces, function(&$v, $k) use($logArgsFlag) {
+            $classKey = $v['class'];
+            $funcKey = ($v['class'] ? "{$v['class']}-" : "").$v['function'];
+            if(($logArgsFlag || isset(self::$argsKeepClasses[$classKey]) || isset(self::$argsKeepFuncs[$funcKey])) && !isset(self::$argsIgnoreFuncs[$funcKey])) {
+                //格式化args
+                array_walk($v['args'], function(&$arg, $k) {
+                    if(is_array($arg)) {
+                        foreach($arg as &$item) {
+                            if(is_object($item)) $item = "obj:".get_class($item);
+                        }
                     }
-                }
-                if(is_object($arg))$arg = "obj:".get_class($arg);
-            });
-            //格式化trace
-            $v = "#{$k} {$v['file']}({$v['line']}): {$v['class']}{$v['type']}{$v['function']}(".json_encode($v['args']).")";
+                    if(is_object($arg))$arg = "obj:".get_class($arg);
+                });
+                //格式化trace
+                $v = "#{$k} {$v['file']}({$v['line']}): {$v['class']}{$v['type']}{$v['function']}(".json_encode($v['args']).")";
+            } else {
+                $v = "#{$k} {$v['file']}({$v['line']}): {$v['class']}{$v['type']}{$v['function']}()";
+            }
         });
         return $traces;
     }
