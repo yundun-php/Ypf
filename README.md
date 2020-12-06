@@ -1,7 +1,7 @@
 # ypf - 云盾PHP框架
 
 ## composer
-	- composer require yd/ypf v1.0.3
+	- composer require yd/ypf v1.0.4
 
 ## 异常日志相关说明
 
