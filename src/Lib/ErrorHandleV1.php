@@ -17,7 +17,7 @@ if(!defined('ERROR_DISPLAY_CLI'))   define('ERROR_DISPLAY_CLI',  false);
 if(!defined('ERROR_DISPLAY_HTML'))  define('ERROR_DISPLAY_HTML',  true);
 if(!defined('ERROR_TRACELOG_JSON')) define('ERROR_TRACELOG_JSON', true);
 if(!defined('ERROR_LOG_PREKEY')) define('ERROR_LOG_PREKEY', '/tmp/log_phperror_');
-if(!defined('ERROR_LOG_ARGS_SWITCH')) define('ERROR_LOG_ARGS_SWITCH', false);
+if(!defined('ERROR_LOG_ARGS_SWITCH')) define('ERROR_LOG_ARGS_SWITCH', true);
 if(!defined('SYS_KEY')) define('SYS_KEY', 'default');
 
 if(in_array(ini_get('display_errors'), ["On", "on", "1"])) ini_set("display_errors","On");

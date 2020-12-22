@@ -426,11 +426,15 @@ class DatabaseV5
                     $update_field[] = "`$key`= ?";
                 }
                 $query = "UPDATE `" . $this->options['table'] . "` SET " . implode(",", $update_field) . " WHERE " . implode(" AND ", $this->options['where']);
-                $this->query($query, $this->params);
+                $stmt = $this->query($query, $this->params);
+                $rowCount = $stmt->rowCount();
+                return $rowCount > 0 ? $rowCount : true;
                 break;
             case 'DELETE':
                 $query = "DELETE FROM `" . $this->options['table'] . "` WHERE " . implode(" AND ", $this->options['where']);
-                $this->query($query, $this->params);
+                $stmt = $this->query($query, $this->params);
+                $rowCount = $stmt->rowCount();
+                return $rowCount > 0 ? $rowCount : true;
                 break;
             default:
                 # code...
