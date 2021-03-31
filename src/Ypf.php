@@ -8,16 +8,14 @@ namespace Ypf;
 define("__YPF__", __DIR__);
 
 class Ypf {
+
     const VERSION = '0.0.2';
 
     private $container = array();
-
-	
-    protected static $userSettings = array();
-
     private $pre_action = array();
 
 	protected static $instances = null;
+    protected static $userSettings = array();
 
     public static function autoload($className) {
         $thisClass = str_replace(__NAMESPACE__.'\\', '', __CLASS__);
@@ -47,11 +45,6 @@ class Ypf {
 		spl_autoload_register(__NAMESPACE__ . "\\Ypf::autoload");
 		
 		if(!defined('__ERROR_HANDLE_USE_SOCKETLOG__') ||  __ERROR_HANDLE_USE_SOCKETLOG__ === false){
-			//if(defined('__ERROR_HANDLE_USE_CLI__') && true === __ERROR_HANDLE_USE_CLI__) {
-			//	self::registerCliErrorHandle();
-			//}else{
-			//	self::registerErrorHandle();
-			//}
 			register_shutdown_function(array(new \Ypf\Lib\ErrorHandleV1(),'Shutdown'));
 			set_error_handler(array(new \Ypf\Lib\ErrorHandleV1(), 'Error'));
 			set_exception_handler(array(new \Ypf\Lib\ErrorHandleV1(),'Exception'));
@@ -61,7 +54,6 @@ class Ypf {
     }
 
     public static function registerErrorHandle() {
-		
 		register_shutdown_function(array(new \Ypf\Lib\ErrorHandle(),'Shutdown'));
         set_error_handler(array(new \Ypf\Lib\ErrorHandle(), 'Error'));
         set_exception_handler(array(new \Ypf\Lib\ErrorHandle(),'Exception'));    	
@@ -72,14 +64,10 @@ class Ypf {
 	 * @node_name 注册命令行脚本错误异常处理类方法
 	 */
     public static function registerCliErrorHandle() {
-
 		register_shutdown_function(array(new \Ypf\Lib\ErrorHandleCli(),'Shutdown'));
         set_error_handler(array(new \Ypf\Lib\ErrorHandleCli(), 'Error'));
         set_exception_handler(array(new \Ypf\Lib\ErrorHandleCli(),'Exception'));
-
     }
-
-
 
     public static function &getInstance() {
         return self::$instances;
@@ -90,13 +78,9 @@ class Ypf {
     }
     
 	public function addPreAction($pre_action, $args = array()) {
-		$this->pre_action[] = array(
-							'action' => $pre_action,
-							'args' => $args,
-							);
+		$this->pre_action[] = array('action' => $pre_action, 'args' => $args);
 		return $this;
 	}
-
     
 	public function execute($action, $args = array()) {
 		if (is_array($action)) {
@@ -105,7 +89,6 @@ class Ypf {
 			$pos = strrpos($action,'\\');
 			$class_name = substr($action, 0, $pos);
 			$method = substr($action, $pos + 1);
-			
 		}
 		if(class_exists($class_name) && is_callable(array($class_name, $method))) {
 			$class = new $class_name();
@@ -114,23 +97,17 @@ class Ypf {
 			throw new \Exception("Unable to load action: '$action'[$class_name->{$method}]");
 		}
 	}
-	
+
 	public function disPatch($action='', $args = array()) {
 		foreach ($this->pre_action as $pre) {
 			$result = $this->execute($pre['action'], $pre['args']);
-					
-			if ($result) {
-				$action = $result;
-				
+			if($result) {
 				break;
 			}
 		}
-		while ($action) {
-			$action = $this->execute($action);
-		}
-		
+        return $result;
 	}
-    
+
 	public function set($name, $value) {
 		 $this->__set($name, $value);
 	}
@@ -154,4 +131,5 @@ class Ypf {
     public function __unset($name) {
         unset($this->container[$name]);
     }    
+
 }
