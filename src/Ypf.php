@@ -81,12 +81,15 @@ class Ypf {
     }
 
     public function disPatch($action='', $args = array()) {
+        //pre_action 正常执行，不会返回数据, 如果有数据返回则要推出
         foreach ($this->pre_action as $pre) {
             $result = $this->execute($pre['action'], $pre['args']);
             if($result) {
-                break;
+                return $result;
             }
         }
+        //如果没有pre_action，通过参数执行单个action
+        $result = $this->execute($action);
         return $result;
     }
 
