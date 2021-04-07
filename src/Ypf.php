@@ -88,9 +88,13 @@ class Ypf {
                 return $result;
             }
         }
-        //如果没有pre_action，通过参数执行单个action
-        $result = $this->execute($action);
-        return $result;
+        if($action) {
+            //如果没有pre_action，通过参数执行单个action
+            $result = $this->execute($action);
+            return $result;
+        } else {
+            return null;
+        }
     }
 
     public function set($name, $value) {
