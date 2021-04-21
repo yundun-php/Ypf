@@ -163,7 +163,8 @@ EOF;
 
         if(!($errno & ini_get('error_reporting'))) return;
         //if($errno != E_ERROR) return;
-        if(substr(php_sapi_name(), 0, 3) != 'cli') ob_clean();
+        // ob_clean 不知什么原因，打开会乱码
+        //if(substr(php_sapi_name(), 0, 3) != 'cli') ob_clean();
         $errorRaw['trace'] = self::formatTrace($traceFilter, true);
         self::display($errorRaw, ini_get('display_errors'));
     }
